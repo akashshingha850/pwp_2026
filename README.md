@@ -1,7 +1,7 @@
 # PWP SPRING 2026
 # PROJECT NAME
 # Group information
-* Student 1. Name and email
+* Akash 1. Name and email
 * Student 2. Name and email
 * Student 3. Name and email
 * Student 4. Name and email
