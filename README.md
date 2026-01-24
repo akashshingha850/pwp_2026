@@ -11,16 +11,16 @@ __Remember to include all required documentation and HOWTOs, including how to cr
 
 
 
-# Pi Security Camera System
+# Edge Security Camera System
 
-A RESTful motion-detecting security camera system built with Raspberry Pi and Pi Camera, featuring automated motion detection, image capture, and a web-based viewing interface.
+A RESTful motion-detecting security camera system built with edge computing hardware, featuring automated motion detection, image capture, and a web-based viewing interface.
 
 
 
 ## Overview
 
 This project implements a complete security camera solution that:
-- Detects motion using computer vision on a Raspberry Pi
+- Detects motion using computer vision on an edge computer
 - Captures and uploads images to a REST API server
 - Provides a client interface for viewing live and historical footage
 - Logs all motion events with detailed metadata
@@ -28,7 +28,7 @@ This project implements a complete security camera solution that:
 ### Key Capabilities
 
 - **REST API Design**: Full CRUD operations across multiple resources
-- **IoT Integration**: Raspberry Pi with Pi Camera hardware
+- **IoT Integration**: Edge computer with camera hardware
 - **Automated Monitoring**: Background service for continuous motion detection
 - **Object Detection**: YOLO + COCO dataset for real-time object recognition with confidence scores
 - **Web Client**: Intuitive interface for accessing motion events and images
@@ -56,7 +56,7 @@ This project implements a complete security camera solution that:
 ## Project Architecture
 
 ```
-Raspberry Pi + Pi Camera
+Edge Computer + Camera
     │
     ├─ Motion Detection
     ├─ Image Capture
@@ -97,8 +97,8 @@ Client Application
      - **Analytics**: Motion patterns, detection statistics, and reports
      - **Settings**: Camera configuration and system preferences
 
-3. **Auxiliary Service** (Raspberry Pi)
-   - Runs continuously on the Raspberry Pi
+3. **Auxiliary Service** (Edge Computer)
+   - Runs continuously on the edge computer
    - Monitors camera feed for motion
    - **Performs real-time object detection using YOLO and COCO dataset**
    - Captures and uploads images when motion detected
@@ -108,7 +108,7 @@ Client Application
 
 ### Object Detection Details
 - Uses YOLO model with COCO dataset (80 classes)
-- Runs inference on Raspberry Pi (may require optimization for performance)
+- Runs inference on edge computer (may require optimization for performance)
 - Sends class names and confidence scores to server
 - Images are captured and uploaded when motion + objects detected
 
