@@ -38,17 +38,18 @@ This project implements a complete security camera solution that:
 ## Features
 
 ### Core Functionality
-- ⚡ Real-time motion detection with configurable sensitivity
-- 📸 Automatic image capture and server upload
-- � **Object detection using YOLOv5 + COCO dataset**
-- 📊 Detailed logging of motion events with timestamps and detection data
-- 🖥️ Client application for viewing live and archived footage
-- 🔔 Optional alert notifications for motion events
+- Real-time motion detection with configurable sensitivity
+- Automatic image capture and server upload
+- **Camera settings and configuration management** - Create, modify, and manage camera parameters
+- **Object detection using YOLO + COCO dataset**
+- Detailed logging of motion events with timestamps and detection data
+- Client application for viewing live and archived footage
+- Optional alert notifications for motion events
 
 ### Technical Features
-- RESTful API with resources: `/cameras`, `/images`, `/motions`, `/detections`, `/alerts`, `/users`
+- RESTful API with resources: `/cameras`, `/images`, `/motions`, `/detections`, `/alerts`
+- **Camera Configuration Management**: Full CRUD operations for camera settings including resolution, sensitivity and recording parameters
 - Persistent storage (SQLite/JSON)
-- User authentication and authorization
 - Timeline visualization of motion events
 
 
@@ -65,7 +66,7 @@ Raspberry Pi + Pi Camera
     
 REST API Server
     │
-    ├─ Resources: /cameras, /images, /motions, /detections, /alerts, /users
+    ├─ Resources: /cameras, /images, /motions, /detections, /alerts
     ├─ Database (SQLite/JSON)
     │
     ▼ GET requests
@@ -73,15 +74,15 @@ REST API Server
 Client Application
     │
     ├─ View Images & Motion Events
+    ├─ Configure Camera Settings (CRUD)
     ├─ Manage Alerts
-    └─ User Authentication
     └─ Visualize Timeline with Motion Events
 ```
 
 **Components:**
 
 1. **REST API Server**
-   - Manages cameras, images, motions, alerts, and users
+   - Manages cameras, images, motions, detections, and alerts
    - Provides RESTful endpoints for all operations
    - Handles data persistence and retrieval
 
@@ -89,7 +90,12 @@ Client Application
    - Web-based interface for viewing captured images
    - Timeline view of motion events
    - Alert configuration and management
-   - User authentication and session handling
+   - **5-Tab GUI Interface:**
+     - **Liveview**: Real-time camera feed and motion monitoring
+     - **Playback**: Historical footage review and timeline navigation
+     - **Logs**: System event logs and motion detection history
+     - **Analytics**: Motion patterns, detection statistics, and reports
+     - **Settings**: Camera configuration and system preferences
 
 3. **Auxiliary Service** (Raspberry Pi)
    - Runs continuously on the Raspberry Pi
@@ -101,7 +107,20 @@ Client Application
 
 
 ### Object Detection Details
-- Uses YOLOv5s model with COCO dataset (80 classes)
+- Uses YOLO model with COCO dataset (80 classes)
 - Runs inference on Raspberry Pi (may require optimization for performance)
 - Sends class names and confidence scores to server
 - Images are captured and uploaded when motion + objects detected
+
+### Camera Configuration Management
+
+Users can create and manage comprehensive camera settings through the RESTful API:
+
+**Configurable Settings (Create Operations):**
+- **Resolution & Quality**: Set image resolution (720p, 1080p, 4K), compression levels, and image quality
+- **Motion Detection**: Configure sensitivity thresholds 
+
+- **Detection Settings**: Enable/disable object detection, set confidence thresholds, filter specific object classes
+- **Network Settings**: Configure upload intervals, bandwidth limits, and connection retries
+
+
