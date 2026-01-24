@@ -1,9 +1,9 @@
 # PWP SPRING 2026
-# PROJECT NAME
+# EyesEdge
 # Group information
 * Akash Bappy (akash.bappy@oulu.fi)
 * Taufiq Ahmed (taufiq.ahmed@oulu.fi)
-* Mesbahul Islam
+* Mesbahul Islam (mesbahul.islam@student.oulu.fi)
 
 
 
@@ -11,7 +11,7 @@ __Remember to include all required documentation and HOWTOs, including how to cr
 
 
 
-# Edge Security Camera System
+# EyesEdge
 
 A RESTful motion-detecting security camera system built with edge computing hardware, featuring automated motion detection, image capture, and a web-based viewing interface.
 
