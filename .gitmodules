@@ -1,3 +1,6 @@
 [submodule "pwp_2026.wiki"]
 	path = pwp_2026.wiki
 	url = https://github.com/akashshingha850/pwp_2026.wiki.git
+[submodule "api"]
+	path = api
+	url = git@github.com:Mesbahul-Islam/pwp_2026_api.git
