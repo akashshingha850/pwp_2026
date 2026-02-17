@@ -1,7 +1,7 @@
 # Meetings minutes
 
 ## Meeting 1.
-* **DATE:**
+* **DATE:09/02/2026**
 * **PARTICIPANTS:Akash Bappy, Taufiq Ahmed**
 * **TEACHER:Iván Sánchez Milara**
 
