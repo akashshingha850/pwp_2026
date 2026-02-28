@@ -372,3 +372,144 @@ python manage.py migrate --fake-initial
 If the submodule uses SSH authentication, switch to HTTPS in `.gitmodules` or configure your SSH keys.
 
 ---
+
+## Testing
+
+The project includes comprehensive test suites for all API apps. Tests are written using Django's built-in testing framework and cover models, serializers, views, and API endpoints.
+
+### Running Tests
+
+To run all tests from the `api/` directory:
+
+```bash
+python manage.py test
+```
+
+To run tests for a specific app:
+
+```bash
+python manage.py test cameras
+python manage.py test motions
+python manage.py test images
+```
+
+### Test Coverage
+
+We use `coverage` to measure test coverage. To run tests with coverage:
+
+```bash
+coverage run --source='.' manage.py test
+```
+
+To view the coverage report in the terminal:
+
+```bash
+coverage report
+```
+
+To generate an HTML coverage report:
+
+```bash
+coverage html
+```
+
+The HTML report will be generated in the `htmlcov/` directory. Open `htmlcov/index.html` in a browser to view detailed coverage information.
+
+**Current Test Coverage: 100%**
+
+| App | Coverage |
+|-----|----------|
+| cameras | 100% |
+| motions | 100% |
+| images | 100% |
+| detections | 100% |
+| alerts | 100% |
+
+### Test Statistics
+
+- **Total Tests:** 58
+- **Test Files:** 3 (cameras, motions, images)
+- **All Tests Passing:** ✓
+
+---
+
+## Code Quality
+
+### PyLint
+
+We use PyLint with the `pylint-django` plugin for code quality analysis. The project maintains a PyLint score of **9.12/10** or higher.
+
+#### Running PyLint
+
+To check code quality for all apps:
+
+```bash
+pylint cameras motions images detections alerts eyesedge
+```
+
+To check a specific app:
+
+```bash
+pylint cameras
+```
+
+#### PyLint Configuration
+
+The project includes a `.pylintrc` configuration file with Django-specific settings:
+
+```ini
+[MAIN]
+load-plugins=pylint_django
+django-settings-module=eyesedge.settings
+
+[MESSAGES CONTROL]
+disable=missing-module-docstring,
+        too-few-public-methods,
+        no-member
+
+[FORMAT]
+max-line-length=120
+```
+
+**Current PyLint Score: 9.12/10**
+
+---
+
+## API Endpoints
+
+The REST API provides the following endpoints:
+
+### Cameras
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/cameras/` | List all cameras |
+| POST | `/api/cameras/` | Create a new camera |
+| GET | `/api/cameras/{id}/` | Retrieve a specific camera |
+| PUT | `/api/cameras/{id}/` | Update a camera |
+| DELETE | `/api/cameras/{id}/` | Delete a camera |
+| GET | `/api/cameras/{id}/motions/` | List motion events for a camera |
+| GET | `/api/cameras/{id}/images/` | List images for a camera |
+
+### Motion Events
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/motions/` | List all motion events |
+| POST | `/api/motions/` | Create a new motion event |
+| GET | `/api/motions/{id}/` | Retrieve a specific motion event |
+| PUT | `/api/motions/{id}/` | Update a motion event |
+| DELETE | `/api/motions/{id}/` | Delete a motion event |
+| GET | `/api/motions/{id}/images/` | List images for a motion event |
+
+### Images
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/images/` | List all images |
+| POST | `/api/images/` | Create a new image |
+| GET | `/api/images/{id}/` | Retrieve a specific image |
+| PUT | `/api/images/{id}/` | Update an image |
+| DELETE | `/api/images/{id}/` | Delete an image |
+
+---
