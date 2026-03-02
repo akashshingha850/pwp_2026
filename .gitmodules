@@ -4,3 +4,4 @@
 [submodule "api"]
 	path = api
 	url = https://github.com/Mesbahul-Islam/pwp_2026_api.git
+	branch = master
