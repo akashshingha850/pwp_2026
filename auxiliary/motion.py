@@ -2,6 +2,8 @@
 
 Motion detection runs on a low-resolution luminance stream for speed.
 When motion is detected, a full-resolution image is saved.
+
+Author: Akash Bappy
 """
 
 from __future__ import annotations
@@ -12,21 +14,48 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import yaml
 from picamera2 import Picamera2
 
 
 @dataclass
 class DetectorConfig:
-	main_size: tuple[int, int] = (1920, 1080)
-	lores_size: tuple[int, int] = (320, 240)
-	fps: int = 30
-	pixel_diff_threshold: int = 20
-	motion_ratio_threshold: float = 0.02
-	background_alpha: float = 0.08
-	event_cooldown_sec: float = 1.0
-	warmup_sec: float = 0.5
-	stats_interval_sec: float = 2.0
-	output_dir: str = "captures"
+	main_size: tuple[int, int]
+	lores_size: tuple[int, int]
+	fps: int
+	pixel_diff_threshold: int
+	motion_ratio_threshold: float
+	background_alpha: float
+	event_cooldown_sec: float
+	warmup_sec: float
+	save_motion_frames: bool
+
+
+def load_config(config_path: str) -> DetectorConfig:
+	path = Path(config_path)
+	if not path.exists():
+		raise FileNotFoundError(f"Config file not found: {path}")
+
+	with path.open("r", encoding="utf-8") as file:
+		data = yaml.safe_load(file) or {}
+
+	return DetectorConfig(
+		main_size=(
+			int(data.get("main_width", 1920)),
+			int(data.get("main_height", 1080)),
+		),
+		lores_size=(
+			int(data.get("lores_width", 320)),
+			int(data.get("lores_height", 240)),
+		),
+		fps=int(data.get("fps", 30)),
+		pixel_diff_threshold=int(data.get("pixel_threshold", 20)),
+		motion_ratio_threshold=float(data.get("motion_threshold", 0.02)),
+		background_alpha=float(data.get("background_alpha", 0.08)),
+		event_cooldown_sec=float(data.get("cooldown", 1.0)),
+		warmup_sec=float(data.get("warmup_sec", 0.5)),
+		save_motion_frames=bool(data.get("save_motion_frames", True)),
+	)
 
 
 class MotionDetector:
@@ -88,7 +117,11 @@ class MotionDetector:
 		return ratio
 
 	def _save_motion_frame(self, ratio: float) -> None:
-		output_path = Path(self.config.output_dir)
+		if not self.config.save_motion_frames:
+			print(f"Motion detected ({ratio:.3f}), but saving is disabled.")
+			return
+		output_dir = "captures"
+		output_path = Path(output_dir)
 		output_path.mkdir(parents=True, exist_ok=True)
 
 		timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -104,7 +137,8 @@ class MotionDetector:
 
 		now = time.perf_counter()
 		elapsed = now - self._stats_window_start
-		if elapsed < self.config.stats_interval_sec:
+		stats_interval_sec = 2.0
+		if elapsed < stats_interval_sec:
 			return
 
 		fps = self._frame_count / elapsed if elapsed > 0 else 0.0
@@ -141,28 +175,9 @@ class MotionDetector:
 
 def parse_args() -> DetectorConfig:
 	parser = argparse.ArgumentParser(description="Fast modular motion detection")
-	parser.add_argument("--fps", type=int, default=30)
-	parser.add_argument("--main-width", type=int, default=1920)
-	parser.add_argument("--main-height", type=int, default=1080)
-	parser.add_argument("--lores-width", type=int, default=320)
-	parser.add_argument("--lores-height", type=int, default=240)
-	parser.add_argument("--pixel-threshold", type=int, default=20)
-	parser.add_argument("--motion-threshold", type=float, default=0.02)
-	parser.add_argument("--background-alpha", type=float, default=0.08)
-	parser.add_argument("--cooldown", type=float, default=1.0)
-	parser.add_argument("--output-dir", type=str, default="captures")
+	parser.add_argument("--config", type=str, default="config.yaml")
 	args = parser.parse_args()
-
-	return DetectorConfig(
-		main_size=(args.main_width, args.main_height),
-		lores_size=(args.lores_width, args.lores_height),
-		fps=args.fps,
-		pixel_diff_threshold=args.pixel_threshold,
-		motion_ratio_threshold=args.motion_threshold,
-		background_alpha=args.background_alpha,
-		event_cooldown_sec=args.cooldown,
-		output_dir=args.output_dir,
-	)
+	return load_config(args.config)
 
 
 def main() -> None:
