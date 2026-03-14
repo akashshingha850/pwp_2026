@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Motion Container (Pi Camera)",
+      "type": "shell",
+      "command": "docker run --rm -it --network host --privileged -v ${workspaceFolder}/config.yaml:/app/config.yaml:ro -v ${workspaceFolder}/captures:/app/captures motion-detector:pi",
+      "problemMatcher": []
+    }
+  ]
+}
