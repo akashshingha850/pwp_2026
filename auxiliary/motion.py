@@ -9,6 +9,7 @@ Author: Akash Bappy
 from __future__ import annotations
 
 import argparse
+import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from picamera2 import Picamera2
+import zmq
 
 
 @dataclass
@@ -67,6 +69,10 @@ class MotionDetector:
 		self._frame_count = 0
 		self._stats_peak_ratio = 0.0
 		self._stats_window_start = time.perf_counter()
+		# ZeroMQ PUB socket setup
+		context = zmq.Context()
+		self.zmq_socket = context.socket(zmq.PUB)
+		self.zmq_socket.bind("tcp://*:5556")  # Change port as needed
 
 	def setup(self) -> None:
 		video_config = self.picam2.create_video_configuration(
@@ -116,20 +122,39 @@ class MotionDetector:
 		)
 		return ratio
 
-	def _save_motion_frame(self, ratio: float) -> None:
+	def _save_motion_frame(self, timestamp: str, ratio: float) -> None:
 		if not self.config.save_motion_frames:
-			print(f"Motion detected ({ratio:.3f}), but saving is disabled.")
+			print(f"Motion detected ({ratio:.3f}), saving disabled.")
 			return
 		output_dir = "captures"
 		output_path = Path(output_dir)
 		output_path.mkdir(parents=True, exist_ok=True)
-
-		timestamp = time.strftime("%Y%m%d_%H%M%S")
-		millis = int((time.time() % 1) * 1000)
-		filename = output_path / f"motion_{timestamp}_{millis:03d}.jpg"
-
+		filename = output_path / f"motion_{timestamp}.jpg"
 		self.picam2.capture_file(str(filename), name="main")
 		print(f"Motion detected ({ratio:.3f}), saved: {filename}")
+
+	def _publish_motion_frame(self, timestamp: str) -> None:
+		frame = self.picam2.capture_array("main")
+		image_bytes = frame.tobytes()
+		metadata = {
+			"timestamp": timestamp,
+			"shape": list(frame.shape),
+			"dtype": str(frame.dtype),
+			"resolution": {
+				"width": int(self.config.main_size[0]),
+				"height": int(self.config.main_size[1]),
+			},
+			"fps": int(self.config.fps),
+			"motion_threshold": float(self.config.motion_ratio_threshold),
+			"size_bytes": len(image_bytes),
+		}
+		self.zmq_socket.send_multipart(
+			[
+				timestamp.encode("utf-8"),
+				json.dumps(metadata).encode("utf-8"),
+				image_bytes,
+			]
+		)
 
 	def _print_stats(self, motion_ratio: float) -> None:
 		if motion_ratio > self._stats_peak_ratio:
@@ -162,7 +187,11 @@ class MotionDetector:
 					ratio >= self.config.motion_ratio_threshold
 					and (now - self._last_event_time) >= self.config.event_cooldown_sec
 				):
-					self._save_motion_frame(ratio)
+					timestamp = time.strftime("%Y%m%d_%H%M%S")
+					millis = int((time.time() % 1) * 1000)
+					event_id = f"{timestamp}_{millis:03d}"
+					self._save_motion_frame(event_id, ratio)
+					self._publish_motion_frame(event_id)
 					self._last_event_time = now
 
 				self._frame_count += 1
@@ -172,19 +201,16 @@ class MotionDetector:
 		finally:
 			self.stop()
 
-
 def parse_args() -> DetectorConfig:
 	parser = argparse.ArgumentParser(description="Fast modular motion detection")
 	parser.add_argument("--config", type=str, default="config.yaml")
 	args = parser.parse_args()
 	return load_config(args.config)
 
-
 def main() -> None:
 	config = parse_args()
 	detector = MotionDetector(config)
 	detector.run()
-
 
 if __name__ == "__main__":
 	main()
