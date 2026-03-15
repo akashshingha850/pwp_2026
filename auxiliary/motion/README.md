@@ -1,19 +1,17 @@
 # Motion Detector Container (Raspberry Pi)
 
-This setup containerizes `motion.py` with a minimal image approach for Raspberry Pi.
+This directory contains a small containerized wrapper for `motion.py` targeted at Raspberry Pi
+devices using the `libcamera` / `picamera2` stack.
 
-## Build (Dockerfile directly)
+**Quick start**
+
+- Build the image on a Pi (from this directory):
 
 ```bash
 docker build -t motion-detector:pi .
 ```
 
-## Run on Raspberry Pi
-
-Camera access from containers still requires device permissions, but Python `libcamera`/`picamera2`
-dependencies are now installed inside the image.
-
-Run with:
+- Run the container (grants camera access and mounts config + captures):
 
 ```bash
 docker run --rm -it \
@@ -24,14 +22,35 @@ docker run --rm -it \
   motion-detector:pi
 ```
 
-## Notes on size
+Prerequisites
 
-- Uses a minimal Debian base plus Raspberry Pi packages (`python3-picamera2`, `libcamera` stack) installed in-image.
-- Uses `.dockerignore` to avoid copying virtualenv/caches into image context.
-- Uses `PIP_NO_CACHE_DIR=1` to reduce layer size.
+- Raspberry Pi OS with camera stack enabled and camera connected.
+- If running from a container: ensure the host kernel and device permissions allow camera access (run with `--privileged` or configure devices appropriately).
 
-## Subscriber (outside container or another container)
+Configuration
+
+- Edit `config.yaml` in the workspace root to tune capture paths, sensitivity, and MQTT/ZMQ endpoints used by `motion.py`.
+- Captured media will be stored in the `captures/` directory mounted into the container.
+
+Run via VS Code task (recommended)
+
+- The workspace includes a reusable task that runs the container with correct mounts. From the workspace root run the task labeled "Run Motion Container (Pi Camera)" or run this command in the workspace:
+
+```bash
+docker run --rm -it --network host --privileged -v ${PWD}/config.yaml:/app/config.yaml:ro -v ${PWD}/captures:/app/captures motion-detector:pi
+```
+
+Subscriber (consume events)
+
+- To consume messages produced by `motion.py` you can run the provided `subscriber.py` from the host (or another container):
 
 ```bash
 python subscriber.py --endpoint tcp://127.0.0.1:5556
 ```
+
+Troubleshooting
+
+- If the camera device is not accessible inside the container, try running without `--privileged` and instead pass the specific device nodes and group permissions, or verify `libcamera` works on the host first.
+- Check `captures/` permissions if files are not being written by the container.
+
+If you want, I can also update the top-level README to reference this quick-start. 
