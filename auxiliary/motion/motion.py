@@ -63,7 +63,12 @@ def load_config(config_path: str) -> DetectorConfig:
 class MotionDetector:
 	def __init__(self, config: DetectorConfig) -> None:
 		self.config = config
-		self.picam2 = Picamera2()
+		try:
+			self.picam2 = Picamera2()
+		except Exception as e:
+			print("Failed to initialize Picamera2:", e)
+			print("No camera detected or libcamera not configured inside the container.")
+			exit(1)
 		self._background: np.ndarray | None = None
 		self._last_event_time = 0.0
 		self._frame_count = 0

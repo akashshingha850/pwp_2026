@@ -5,6 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Build context is the repo root (auxiliary/)
+COPY motion/motion.py ./
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
      ca-certificates \
@@ -19,8 +22,7 @@ RUN apt-get update \
      python3-zmq \
      python3-yaml \
      python3-numpy \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY motion.py config.yaml subscriber.py ./
+     libcamera-apps \
+  && rm -rf /var/lib/apt/lists/*
 
 CMD ["python3", "motion.py"]
