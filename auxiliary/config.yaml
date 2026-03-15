@@ -8,5 +8,5 @@ motion_threshold: 0.02
 background_alpha: 0.08
 cooldown: 1.0
 warmup_sec: 0.5
-save_motion_frames: true
+save_motion_frames: false
 

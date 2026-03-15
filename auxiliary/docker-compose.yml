@@ -3,13 +3,13 @@ services:
     build:
       context: .
       dockerfile: motion/Dockerfile
-    image: motion-detector:pi
+    image: motion-detector
     container_name: motion-detector
     privileged: true
     network_mode: host
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./captures:/app/captures
+      # - ./captures:/app/captures
       - /run/udev:/run/udev:ro
       - /dev:/dev
     restart: "no"
