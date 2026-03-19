@@ -5,3 +5,4 @@ draft/monitor/monitor.db
 *.jpg
 
 **/.venv/
+**.DS_Store
