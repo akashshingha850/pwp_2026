@@ -1,0 +1,184 @@
+openapi: 3.0.4
+info:
+  title: EyesEdge API
+  version: 1.0.0
+  description: API documentation for the programmable web project
+
+servers:
+  - url: /api
+    description: Base path for all API routes
+
+components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Enter token in format 'Token <your_token>'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+    Camera:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+    Motion:
+      type: object
+      properties:
+        id:
+          type: integer
+        camera:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+        camera:
+          type: integer
+        motion_event:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        file:
+          type: string
+          format: uri
+
+security:
+  - TokenAuth: []
+
+paths:
+  /token/:
+    post:
+      summary: Get auth token
+      description: Retrieve user authentication token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              example:
+                token: 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+  
+  /cameras/:
+    get:
+      summary: List cameras
+      description: Returns a list of all cameras in the system
+      responses:
+        '200':
+          description: Cameras listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Camera'
+    post:
+      summary: Add a new camera
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Camera'
+      responses:
+        '201':
+          description: Camera created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cameras/{id}/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Camera ID
+    get:
+      summary: Get camera details
+      responses:
+        '200':
+          description: Camera details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
+        '404':
+          description: Camera not found
+    put:
+      summary: Update camera
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Camera'
+      responses:
+        '200':
+          description: Camera updated
+    delete:
+      summary: Delete camera
+      responses:
+        '204':
+          description: Camera deleted
+
+  /motions/:
+    get:
+      summary: List motion events
+      responses:
+        '200':
+          description: Motions listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Motion'
+
+  /images/:
+    get:
+      summary: List captured images
+      responses:
+        '200':
+          description: Images listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
