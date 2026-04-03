@@ -2,11 +2,11 @@ openapi: 3.0.4
 info:
   title: EyesEdge API
   version: 1.0.0
-  description: API documentation for the programmable web project
+  description: API documentation for the programmable web project. Designed for managing security cameras, motion detections, and captured images.
 
 servers:
   - url: /api
-    description: Base path for all API routes
+    description: Base URL for EyesEdge API
 
 components:
   securitySchemes:
@@ -14,50 +14,132 @@ components:
       type: apiKey
       in: header
       name: Authorization
-      description: Enter token in format 'Token <your_token>'
-
+      description: |
+        Token-based authentication. Format: `Token <your_token>`.
   schemas:
     ErrorResponse:
       type: object
       properties:
         detail:
           type: string
+          description: Human readable error message.
+      example:
+        detail: "Not authenticated"
     Camera:
       type: object
+      required:
+        - address
+        - resolution
       properties:
         id:
           type: integer
-        name:
-          type: string
-        location:
-          type: string
-        status:
-          type: string
-    Motion:
-      type: object
-      properties:
-        id:
-          type: integer
-        camera:
-          type: integer
-        timestamp:
-          type: string
-          format: date-time
-    Image:
-      type: object
-      properties:
-        id:
-          type: integer
-        camera:
-          type: integer
-        motion_event:
-          type: integer
-        timestamp:
-          type: string
-          format: date-time
-        file:
+          description: Unique camera ID
+          readOnly: true
+        address:
           type: string
           format: uri
+          description: Camera stream URL
+        resolution:
+          type: string
+          enum:
+            - "1280x720"
+            - "1920x1080"
+            - "3840x2160"
+          description: Camera resolution definition
+        fps:
+          type: integer
+          minimum: 1
+          description: Frames per second limits
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+          description: Usage state of the camera.
+      example:
+        id: 1
+        address: "http://192.168.1.100/stream"
+        resolution: "1920x1080"
+        fps: 25
+        status: "active"
+    Motion:
+      type: object
+      required:
+        - camera
+        - duration
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: Unique motion event ID
+        camera:
+          type: integer
+          minimum: 1
+          description: Related camera ID
+        duration:
+          type: number
+          minimum: 0
+          description: Motion duration in seconds
+        threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Motion threshold used by detector
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Event timestamp recorded by the system
+        created_at: 
+          type: string
+          format: date-time
+          readOnly: true
+          description: Database creation timestamp
+      example:
+        id: 10
+        camera: 1
+        duration: 5.5
+        threshold: 0.25
+        timestamp: "2026-04-03T10:30:00Z"
+        created_at: "2026-04-03T10:30:01Z"
+    Image:
+      type: object
+      required:
+        - motion_event
+        - filepath
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: Unique image ID
+        camera:
+          type: integer
+          readOnly: true
+          description: Associated camera ID (derived from motion_event)
+        motion_event:
+          type: integer
+          minimum: 1
+          description: Related motion event ID
+        filepath:
+          type: string
+          format: uri
+          description: URL path to the captured image file
+        filesize:
+          type: integer
+          minimum: 0
+          description: Image file size in bytes
+        created_at: 
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the image was uploaded
+      example:
+        id: 105
+        camera: 1
+        motion_event: 10
+        filepath: "http://storage.local/snapshots/105.jpg"
+        filesize: 102400
+        created_at: "2026-04-03T10:30:02Z"
 
 security:
   - TokenAuth: []
@@ -66,7 +148,7 @@ paths:
   /token/:
     post:
       summary: Get auth token
-      description: Retrieve user authentication token
+      description: Retrieve user authentication token for API access.
       requestBody:
         required: true
         content:
@@ -85,14 +167,14 @@ paths:
             application/json:
               example:
                 token: 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
-  
+
   /cameras/:
     get:
-      summary: List cameras
-      description: Returns a list of all cameras in the system
+      summary: List all cameras
+      description: Returns a collection of all registered cameras.
       responses:
         '200':
-          description: Cameras listed
+          description: Successful response containing a list of cameras.
           content:
             application/json:
               schema:
@@ -100,7 +182,8 @@ paths:
                 items:
                   $ref: '#/components/schemas/Camera'
     post:
-      summary: Add a new camera
+      summary: Register a new camera
+      description: Creates a new camera configuration entry.
       requestBody:
         required: true
         content:
@@ -109,13 +192,13 @@ paths:
               $ref: '#/components/schemas/Camera'
       responses:
         '201':
-          description: Camera created
+          description: Successfully created the camera registration.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Camera'
         '400':
-          description: Bad request
+          description: Schema validation failed. Provide correct object properties.
           content:
             application/json:
               schema:
@@ -130,18 +213,24 @@ paths:
           type: integer
         description: Camera ID
     get:
-      summary: Get camera details
+      summary: Retrieve specific Camera
       responses:
         '200':
-          description: Camera details
+          description: Camera object returned.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Camera'
         '404':
-          description: Camera not found
+          description: Item does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Not found."
     put:
-      summary: Update camera
+      summary: Update a camera globally
       requestBody:
         required: true
         content:
@@ -150,12 +239,56 @@ paths:
               $ref: '#/components/schemas/Camera'
       responses:
         '200':
-          description: Camera updated
+          description: Camera successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
     delete:
-      summary: Delete camera
+      summary: Un-register a camera
       responses:
         '204':
-          description: Camera deleted
+          description: Success (No Content).
+
+  /cameras/{id}/motions/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Camera ID
+    get:
+      summary: List motion events for a specific camera
+      responses:
+        '200':
+          description: Array of connected MotionEvents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Motion'
+
+  /cameras/{id}/images/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Camera ID
+    get:
+      summary: List images captured by a specific camera
+      responses:
+        '200':
+          description: Array of connected Images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
 
   /motions/:
     get:
@@ -169,6 +302,87 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Motion'
+    post:
+      summary: Record a new motion event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Motion'
+      responses:
+        '201':
+          description: MotionEvent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motion'
+        '400':
+          description: Invalid data format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /motions/{id}/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Motion Element ID
+    get:
+      summary: Retrieve specific MotionEvent
+      responses:
+        '200':
+          description: Details for MotionEvent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motion'
+        '404':
+          description: Not found.
+    put:
+      summary: Update a motion event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Motion'
+      responses:
+        '200':
+          description: MotionEvent successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motion'
+    delete:
+      summary: Delete a motion event
+      responses:
+        '204':
+          description: Deleted successfully
+
+  /motions/{id}/images/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Motion ID
+    get:
+      summary: List images connected to this motion act
+      responses:
+        '200':
+          description: Array of related Images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
 
   /images/:
     get:
@@ -182,3 +396,64 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Image'
+    post:
+      summary: Register a new image capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+      responses:
+        '201':
+          description: Success response containing the new Image
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+        '400':
+          description: Request body is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /images/{id}/:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Image ID
+    get:
+      summary: Fetch a specific Image
+      responses:
+        '200':
+          description: Image metadata returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+        '404':
+          description: Image not found.
+    put:
+      summary: Update an Image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+      responses:
+        '200':
+          description: Image successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+    delete:
+      summary: Delete an Image
+      responses:
+        '204':
+          description: Deleted successfully
