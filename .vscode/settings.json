@@ -3,7 +3,7 @@
     "python-envs.pythonProjects": [
         {
             "path": "api",
-            "envManager": "ms-python.python:pipenv",
+            "envManager": "ms-python.python:system",
             "packageManager": "ms-python.python:pip"
         }
     ]
