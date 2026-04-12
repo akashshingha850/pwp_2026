@@ -2,11 +2,20 @@ openapi: 3.0.4
 info:
   title: EyesEdge API
   version: 1.0.0
-  description: API documentation for the programmable web project. Designed for managing security cameras, motion detections, and captured images.
+  description: >
+    API documentation for the EyesEdge project. This spec reflects the currently
+    implemented Django REST Framework endpoints in `cameras`, `motions`, and
+    `images` apps.
 
 servers:
   - url: /api
-    description: Base URL for EyesEdge API
+    description: Base URL prefix configured in the Django router.
+
+tags:
+  - name: auth
+  - name: cameras
+  - name: motions
+  - name: images
 
 components:
   securitySchemes:
@@ -14,132 +23,224 @@ components:
       type: apiKey
       in: header
       name: Authorization
-      description: |
-        Token-based authentication. Format: `Token <your_token>`.
+      description: Token auth using header value format `Token <token>`.
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Resource identifier.
+      schema:
+        type: integer
+        minimum: 1
+    CameraAddressFilter:
+      name: address
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uri
+    CameraResolutionFilter:
+      name: resolution
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["1280x720", "1920x1080", "3840x2160"]
+    CameraFpsFilter:
+      name: fps
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+    CameraStatusFilter:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [active, inactive]
+    MotionDurationFilter:
+      name: duration
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: 0
+    MotionThresholdFilter:
+      name: threshold
+      in: query
+      required: false
+      schema:
+        type: number
+        minimum: 0
+        maximum: 1
+    MotionTimestampFilter:
+      name: timestamp
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    ImageMotionEventFilter:
+      name: motion_event
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+    ImageFilepathFilter:
+      name: filepath
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uri
+    ImageFilesizeFilter:
+      name: filesize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+
   schemas:
-    ErrorResponse:
+    AuthTokenRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+      example:
+        username: admin
+        password: secret123
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required: [token]
+      example:
+        token: 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+
+    DetailError:
       type: object
       properties:
         detail:
           type: string
-          description: Human readable error message.
       example:
-        detail: "Not authenticated"
+        detail: Not authenticated.
+
+    ValidationError:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+      example:
+        address:
+          - This field is required.
+
     Camera:
       type: object
-      required:
-        - address
-        - resolution
+      required: [address, resolution]
+      additionalProperties: false
       properties:
         id:
           type: integer
-          description: Unique camera ID
           readOnly: true
         address:
           type: string
           format: uri
-          description: Camera stream URL
         resolution:
           type: string
-          enum:
-            - "1280x720"
-            - "1920x1080"
-            - "3840x2160"
-          description: Camera resolution definition
+          enum: ["1280x720", "1920x1080", "3840x2160"]
         fps:
           type: integer
           minimum: 1
-          description: Frames per second limits
         status:
           type: string
-          enum:
-            - active
-            - inactive
-          description: Usage state of the camera.
+          enum: [active, inactive]
       example:
         id: 1
-        address: "http://192.168.1.100/stream"
+        address: http://192.168.1.100/stream
         resolution: "1920x1080"
         fps: 25
-        status: "active"
-    Motion:
+        status: active
+
+    MotionEvent:
       type: object
-      required:
-        - camera
-        - duration
+      required: [camera, duration]
+      additionalProperties: false
       properties:
         id:
           type: integer
           readOnly: true
-          description: Unique motion event ID
         camera:
           type: integer
           minimum: 1
-          description: Related camera ID
-        duration:
-          type: number
-          minimum: 0
-          description: Motion duration in seconds
-        threshold:
-          type: number
-          minimum: 0
-          maximum: 1
-          description: Motion threshold used by detector
         timestamp:
           type: string
           format: date-time
           readOnly: true
-          description: Event timestamp recorded by the system
-        created_at: 
+        duration:
+          type: number
+          minimum: 0
+        threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+        created_at:
           type: string
           format: date-time
           readOnly: true
-          description: Database creation timestamp
       example:
         id: 10
         camera: 1
+        timestamp: "2026-04-12T10:30:00Z"
         duration: 5.5
         threshold: 0.25
-        timestamp: "2026-04-03T10:30:00Z"
-        created_at: "2026-04-03T10:30:01Z"
+        created_at: "2026-04-12T10:30:00Z"
+
     Image:
       type: object
-      required:
-        - motion_event
-        - filepath
+      required: [motion_event, filepath]
+      additionalProperties: false
       properties:
         id:
           type: integer
           readOnly: true
-          description: Unique image ID
         camera:
           type: integer
           readOnly: true
-          description: Associated camera ID (derived from motion_event)
+          description: Derived from the related motion event.
         motion_event:
           type: integer
           minimum: 1
-          description: Related motion event ID
         filepath:
           type: string
           format: uri
-          description: URL path to the captured image file
         filesize:
           type: integer
+          nullable: true
           minimum: 0
-          description: Image file size in bytes
-        created_at: 
+        created_at:
           type: string
           format: date-time
           readOnly: true
-          description: Timestamp when the image was uploaded
       example:
         id: 105
         camera: 1
         motion_event: 10
-        filepath: "http://storage.local/snapshots/105.jpg"
+        filepath: http://storage.local/snapshots/105.jpg
         filesize: 102400
-        created_at: "2026-04-03T10:30:02Z"
+        created_at: "2026-04-12T10:30:02Z"
 
 security:
   - TokenAuth: []
@@ -147,43 +248,57 @@ security:
 paths:
   /token/:
     post:
-      summary: Get auth token
-      description: Retrieve user authentication token for API access.
+      tags: [auth]
+      summary: Obtain authentication token
+      description: Returns DRF auth token used in `Authorization` header.
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
+              $ref: '#/components/schemas/AuthTokenRequest'
       responses:
         '200':
-          description: Authentication successful
+          description: Token created/returned.
           content:
             application/json:
-              example:
-                token: 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Invalid credentials payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
 
   /cameras/:
     get:
-      summary: List all cameras
-      description: Returns a collection of all registered cameras.
+      tags: [cameras]
+      summary: List cameras
+      parameters:
+        - $ref: '#/components/parameters/CameraAddressFilter'
+        - $ref: '#/components/parameters/CameraResolutionFilter'
+        - $ref: '#/components/parameters/CameraFpsFilter'
+        - $ref: '#/components/parameters/CameraStatusFilter'
       responses:
         '200':
-          description: Successful response containing a list of cameras.
+          description: List of camera resources.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Camera'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     post:
-      summary: Register a new camera
-      description: Creates a new camera configuration entry.
+      tags: [cameras]
+      summary: Create camera
       requestBody:
         required: true
         content:
@@ -192,45 +307,52 @@ paths:
               $ref: '#/components/schemas/Camera'
       responses:
         '201':
-          description: Successfully created the camera registration.
+          description: Camera created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Camera'
         '400':
-          description: Schema validation failed. Provide correct object properties.
+          description: Validation error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /cameras/{id}/:
     parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Camera ID
+      - $ref: '#/components/parameters/IdPath'
     get:
-      summary: Retrieve specific Camera
+      tags: [cameras]
+      summary: Retrieve camera
       responses:
         '200':
-          description: Camera object returned.
+          description: Camera resource.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Camera'
-        '404':
-          description: Item does not exist.
+        '401':
+          description: Authentication required.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                detail: "Not found."
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Camera not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     put:
-      summary: Update a camera globally
+      tags: [cameras]
+      summary: Update camera
       requestBody:
         required: true
         content:
@@ -239,165 +361,382 @@ paths:
               $ref: '#/components/schemas/Camera'
       responses:
         '200':
-          description: Camera successfully updated
+          description: Camera updated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Camera'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Camera not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     delete:
-      summary: Un-register a camera
+      tags: [cameras]
+      summary: Delete camera
       responses:
         '204':
-          description: Success (No Content).
+          description: Camera deleted.
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Camera not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /cameras/{id}/motions/:
     parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Camera ID
+      - $ref: '#/components/parameters/IdPath'
     get:
-      summary: List motion events for a specific camera
+      tags: [cameras, motions]
+      summary: List motions by camera
+      parameters:
+        - $ref: '#/components/parameters/MotionDurationFilter'
+        - $ref: '#/components/parameters/MotionThresholdFilter'
+        - $ref: '#/components/parameters/MotionTimestampFilter'
       responses:
         '200':
-          description: Array of connected MotionEvents
+          description: Motion events for a camera.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Motion'
-
-  /cameras/{id}/images/:
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Camera ID
-    get:
-      summary: List images captured by a specific camera
-      responses:
-        '200':
-          description: Array of connected Images
+                  $ref: '#/components/schemas/MotionEvent'
+        '401':
+          description: Authentication required.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Image'
+                $ref: '#/components/schemas/DetailError'
+    post:
+      tags: [cameras, motions]
+      summary: Create motion event for camera
+      description: The camera is forced from path parameter `{id}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [duration]
+              properties:
+                duration:
+                  type: number
+                  minimum: 0
+                threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+            example:
+              duration: 4.2
+              threshold: 0.35
+      responses:
+        '201':
+          description: Motion event created.
+          headers:
+            Location:
+              description: URL of created motion event.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MotionEvent'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /motions/:
     get:
+      tags: [motions]
       summary: List motion events
+      parameters:
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: camera
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/MotionDurationFilter'
+        - $ref: '#/components/parameters/MotionThresholdFilter'
+        - $ref: '#/components/parameters/MotionTimestampFilter'
+        - name: created_at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
-          description: Motions listed
+          description: List of motion events.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Motion'
+                  $ref: '#/components/schemas/MotionEvent'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     post:
-      summary: Record a new motion event
+      tags: [motions]
+      summary: Create motion event
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Motion'
+              $ref: '#/components/schemas/MotionEvent'
       responses:
         '201':
-          description: MotionEvent created
+          description: Motion event created.
+          headers:
+            Location:
+              description: URL of created motion event.
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Motion'
+                $ref: '#/components/schemas/MotionEvent'
         '400':
-          description: Invalid data format
+          description: Validation error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /motions/{id}/:
     parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Motion Element ID
+      - $ref: '#/components/parameters/IdPath'
     get:
-      summary: Retrieve specific MotionEvent
+      tags: [motions]
+      summary: Retrieve motion event
       responses:
         '200':
-          description: Details for MotionEvent
+          description: Motion event resource.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Motion'
+                $ref: '#/components/schemas/MotionEvent'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
         '404':
-          description: Not found.
+          description: Motion event not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     put:
-      summary: Update a motion event
+      tags: [motions]
+      summary: Update motion event
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Motion'
+              $ref: '#/components/schemas/MotionEvent'
       responses:
         '200':
-          description: MotionEvent successfully updated
+          description: Motion event updated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Motion'
+                $ref: '#/components/schemas/MotionEvent'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Motion event not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     delete:
-      summary: Delete a motion event
+      tags: [motions]
+      summary: Delete motion event
       responses:
         '204':
-          description: Deleted successfully
+          description: Motion event deleted.
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Motion event not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /motions/{id}/images/:
     parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Motion ID
+      - $ref: '#/components/parameters/IdPath'
     get:
-      summary: List images connected to this motion act
+      tags: [motions, images]
+      summary: List images by motion event
+      parameters:
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/ImageFilepathFilter'
+        - $ref: '#/components/parameters/ImageFilesizeFilter'
+        - name: created_at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/ImageMotionEventFilter'
       responses:
         '200':
-          description: Array of related Images
+          description: Images for selected motion event.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Image'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+    post:
+      tags: [motions, images]
+      summary: Create image under motion event
+      description: The `motion_event` value is forced from path parameter `{id}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filepath]
+              properties:
+                filepath:
+                  type: string
+                  format: uri
+                filesize:
+                  type: integer
+                  nullable: true
+                  minimum: 0
+            example:
+              filepath: http://storage.local/snapshots/210.jpg
+              filesize: 85412
+      responses:
+        '201':
+          description: Image created.
+          headers:
+            Location:
+              description: URL of created image.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /images/:
     get:
-      summary: List captured images
+      tags: [images]
+      summary: List images
+      description: Cached for 300 seconds and varied by Authorization header.
+      parameters:
+        - $ref: '#/components/parameters/ImageMotionEventFilter'
       responses:
         '200':
-          description: Images listed
+          description: List of image resources.
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Image'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     post:
-      summary: Register a new image capture
+      tags: [images]
+      summary: Create image
       requestBody:
         required: true
         content:
@@ -406,39 +745,57 @@ paths:
               $ref: '#/components/schemas/Image'
       responses:
         '201':
-          description: Success response containing the new Image
+          description: Image created.
+          headers:
+            Location:
+              description: URL of created image.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Image'
         '400':
-          description: Request body is invalid
+          description: Validation error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
 
   /images/{id}/:
     parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Image ID
+      - $ref: '#/components/parameters/IdPath'
     get:
-      summary: Fetch a specific Image
+      tags: [images]
+      summary: Retrieve image
       responses:
         '200':
-          description: Image metadata returned
+          description: Image resource.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Image'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
         '404':
           description: Image not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     put:
-      summary: Update an Image
+      tags: [images]
+      summary: Update image
       requestBody:
         required: true
         content:
@@ -447,13 +804,44 @@ paths:
               $ref: '#/components/schemas/Image'
       responses:
         '200':
-          description: Image successfully updated
+          description: Image updated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Image'
+        '400':
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Image not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
     delete:
-      summary: Delete an Image
+      tags: [images]
+      summary: Delete image
       responses:
         '204':
-          description: Deleted successfully
+          description: Image deleted.
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'
+        '404':
+          description: Image not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailError'

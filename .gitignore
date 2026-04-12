@@ -6,3 +6,5 @@ draft/monitor/monitor.db
 
 **/.venv/
 **.DS_Store
+*.DS_Store
+*.sqlite3
