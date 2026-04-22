@@ -4,6 +4,9 @@ Broker: q1fd1412.ala.eu-central-1.emqxsl.com (EMQX Cloud, TLS 8883)
 
 Publish a JSON object to the topic below to update one or more keys, e.g.:
     {"fps": 25, "motion_threshold": 0.03, "save_motion_frames": true}
+
+Set credentials via env vars:
+    MQTT_USERNAME=<user> MQTT_PASSWORD=<pass> python config.py
 """
 
 from __future__ import annotations
@@ -16,13 +19,16 @@ from typing import Any
 
 import paho.mqtt.client as mqtt
 import yaml
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent / ".env")
 
 # ── broker ────────────────────────────────────────────────────────────────────
 BROKER_HOST = "q1fd1412.ala.eu-central-1.emqxsl.com"
 BROKER_PORT = 8883
 MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
-TOPIC = "pwp/config/set"
+TOPIC = "pwp/config"
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
@@ -95,12 +101,12 @@ def apply_update(payload: str) -> None:
     log.info("config.yaml updated: %s", validated)
 
 
-def on_connect(client: mqtt.Client, _userdata, _flags, rc: int, _properties=None) -> None:
+def on_connect(client: mqtt.Client, _userdata, _flags, rc, _properties=None) -> None:
     if rc == 0:
         log.info("Connected — subscribing to %s", TOPIC)
         client.subscribe(TOPIC, qos=1)
     else:
-        log.error("Connection refused, rc=%d", rc)
+        log.error("Connection refused: %s", rc)
 
 
 def on_message(_client: mqtt.Client, _userdata, msg: mqtt.MQTTMessage) -> None:
