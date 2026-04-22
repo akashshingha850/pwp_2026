@@ -12,4 +12,4 @@ services:
       # - ./captures:/app/captures
       - /run/udev:/run/udev:ro
       - /dev:/dev
-    restart: "no"
+    restart: "unless-stopped"
