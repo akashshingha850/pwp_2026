@@ -13,3 +13,4 @@ services:
       - /run/udev:/run/udev:ro
       - /dev:/dev
     restart: "unless-stopped"
+

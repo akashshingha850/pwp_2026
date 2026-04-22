@@ -1,0 +1,5 @@
+## Add a .env in this folder with the following content:
+MQTT_BROKER=your_mqtt_broker_address
+MQTT_PORT=your_mqtt_broker_port
+MQTT_USERNAME=your_username
+MQTT_PASSWORD=your_password

@@ -8,3 +8,5 @@ draft/monitor/monitor.db
 **.DS_Store
 *.DS_Store
 *.sqlite3
+
+*.env
