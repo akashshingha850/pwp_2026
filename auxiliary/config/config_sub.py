@@ -24,13 +24,13 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / ".env")
 
 # ── broker ────────────────────────────────────────────────────────────────────
-BROKER_HOST = "q1fd1412.ala.eu-central-1.emqxsl.com"
-BROKER_PORT = 8883
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", 8883))
 MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 TOPIC = "pwp/config"
 
-CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
 # ── allowed keys and their expected Python types ──────────────────────────────
 SCHEMA: dict[str, type | tuple[type, ...]] = {
@@ -60,10 +60,8 @@ def _load() -> dict[str, Any]:
 
 
 def _save(data: dict[str, Any]) -> None:
-    tmp = CONFIG_PATH.with_suffix(".tmp")
-    with tmp.open("w") as f:
+    with CONFIG_PATH.open("w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    tmp.replace(CONFIG_PATH)
 
 
 def apply_update(payload: str) -> None:
@@ -122,8 +120,8 @@ def main() -> None:
     client.on_connect = on_connect
     client.on_message = on_message
 
-    log.info("Connecting to %s:%d …", BROKER_HOST, BROKER_PORT)
-    client.connect(BROKER_HOST, BROKER_PORT, keepalive=60)
+    log.info("Connecting to %s:%d …", MQTT_BROKER, MQTT_PORT)
+    client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
     client.loop_forever()
 
 

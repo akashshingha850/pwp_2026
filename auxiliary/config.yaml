@@ -1,5 +1,5 @@
-main_width: 1280
-main_height: 720
+main_width: 1920
+main_height: 1080
 lores_width: 320
 lores_height: 240
 fps: 25
@@ -8,4 +8,4 @@ motion_threshold: 0.05
 background_alpha: 0.08
 cooldown: 1.0
 warmup_sec: 0.5
-save_motion_frames: true
+save_motion_frames: false

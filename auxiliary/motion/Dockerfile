@@ -7,7 +7,6 @@ WORKDIR /app
 
 # Build context is the repo root (auxiliary/)
 COPY motion/motion.py ./
-COPY config.yaml ./
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

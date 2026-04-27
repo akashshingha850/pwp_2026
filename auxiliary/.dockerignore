@@ -8,3 +8,4 @@
 captures/
 received/
 *.log
+*.env

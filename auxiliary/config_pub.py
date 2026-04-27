@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / "config" / ".env")
 
 # ── broker ────────────────────────────────────────────────────────────────────
-BROKER_HOST = "q1fd1412.ala.eu-central-1.emqxsl.com"
-BROKER_PORT = 8883
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", 8883))
 MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 TOPIC = "pwp/config"
@@ -65,9 +65,9 @@ def main() -> None:
     client.tls_set()
     client.on_connect = on_connect
 
-    log.info("Connecting to %s:%d …", BROKER_HOST, BROKER_PORT)
+    log.info("Connecting to %s:%d …", MQTT_BROKER, MQTT_PORT)
     log.info("Payload: %s", json.dumps(PAYLOAD, indent=2))
-    client.connect(BROKER_HOST, BROKER_PORT, keepalive=60)
+    client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
     client.loop_forever()
 
 
