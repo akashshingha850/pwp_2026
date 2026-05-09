@@ -18,7 +18,7 @@ from typing import Any
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / "config" / ".env")
+load_dotenv(Path(__file__).parent / ".env")
 
 # ── broker ────────────────────────────────────────────────────────────────────
 MQTT_BROKER = os.environ.get("MQTT_BROKER", "")

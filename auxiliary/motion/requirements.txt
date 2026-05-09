@@ -1,4 +1,3 @@
-numpy
-PyYAML
-pyzmq
-picamera2
+paho-mqtt
+python-dotenv
+pillow

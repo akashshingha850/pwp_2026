@@ -10,3 +10,4 @@ draft/monitor/monitor.db
 *.sqlite3
 
 *.env
+*.vscode/
