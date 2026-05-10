@@ -1,0 +1,11 @@
+services:
+  bridge:
+    build: .
+    image: eyesedge-bridge
+    container_name: eyesedge-bridge
+    env_file: .env
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./captures:/app/captures
+    restart: unless-stopped
