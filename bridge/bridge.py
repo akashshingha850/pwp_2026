@@ -9,6 +9,14 @@ Connects the Pi-side auxiliary services to the cloud REST API:
 
 MAC → camera UUID mapping is read from the bridge ``.env`` file
 (``CAMERA_MAP=mac=uuid,mac=uuid,...``).
+
+External sources used:
+  - paho-mqtt (MQTT client): https://github.com/eclipse/paho.mqtt.python  (EPL-2.0)
+  - Requests library (HTTP):  https://requests.readthedocs.io/              (Apache 2.0)
+  - python-dotenv (env config): https://github.com/theskumar/python-dotenv  (BSD)
+  - Course material (TLS setup, MQTT pub/sub patterns):
+    https://lovelace.oulu.fi/ohjelmoitava-web/ohjelmoitava-web/
+    exercise-4-implementing-hypermedia-clients/
 """
 
 from __future__ import annotations
@@ -74,6 +82,7 @@ log = logging.getLogger("bridge")
 
 # ── tiny HTTP server for serving captured JPEGs ───────────────────────────────
 def start_file_server() -> None:
+    """Start a background HTTP server that serves JPEG files from CAPTURES_DIR."""
     CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
 
     class Handler(http.server.SimpleHTTPRequestHandler):
@@ -93,6 +102,7 @@ def start_file_server() -> None:
 
 # ── REST helpers ──────────────────────────────────────────────────────────────
 def _api_session() -> requests.Session:
+    """Build an authenticated requests Session with JSON headers pre-set."""
     s = requests.Session()
     if API_TOKEN:
         s.headers["Authorization"] = f"Token {API_TOKEN}"
@@ -107,6 +117,7 @@ api = _api_session()
 
 
 def post_motion_event(camera_uuid: str, duration: float, threshold: float) -> str | None:
+    """POST a new MotionEvent to the API and return its UUID, or None on failure."""
     url = f"{API_BASE}/api/motions/"
     payload = {"camera": camera_uuid, "duration": duration, "threshold": threshold}
     r = api.post(url, data=json.dumps(payload), timeout=10)
@@ -117,6 +128,7 @@ def post_motion_event(camera_uuid: str, duration: float, threshold: float) -> st
 
 
 def post_image(motion_uuid: str, filepath_url: str, filesize: int) -> bool:
+    """POST an Image record linking a JPEG URL to an existing MotionEvent."""
     url = f"{API_BASE}/api/images/"
     payload = {"motion_event": motion_uuid, "filepath": filepath_url, "filesize": filesize}
     r = api.post(url, data=json.dumps(payload), timeout=10)
@@ -127,6 +139,7 @@ def post_image(motion_uuid: str, filepath_url: str, filesize: int) -> bool:
 
 
 def list_cameras() -> list[dict[str, Any]]:
+    """Fetch all cameras from the API and return them as a list of dicts."""
     url = f"{API_BASE}/api/cameras/"
     r = api.get(url, timeout=10)
     if not r.ok:
@@ -138,6 +151,7 @@ def list_cameras() -> list[dict[str, Any]]:
 
 # ── MQTT motion ingest ────────────────────────────────────────────────────────
 def handle_motion(payload_bytes: bytes) -> None:
+    """Decode an MQTT motion payload, save the JPEG, and push records to the API."""
     try:
         payload = json.loads(payload_bytes.decode("utf-8", errors="replace"))
     except json.JSONDecodeError as exc:
@@ -175,6 +189,7 @@ def handle_motion(payload_bytes: bytes) -> None:
 
 
 def on_connect(client: mqtt.Client, _userdata, _flags, rc, _properties=None) -> None:
+    """Subscribe to the motion topic once the MQTT connection is established."""
     if rc == 0:
         log.info("MQTT connected — subscribing to %s", MOTION_TOPIC)
         client.subscribe(MOTION_TOPIC, qos=1)
@@ -183,11 +198,13 @@ def on_connect(client: mqtt.Client, _userdata, _flags, rc, _properties=None) -> 
 
 
 def on_message(_client: mqtt.Client, _userdata, msg: mqtt.MQTTMessage) -> None:
+    """Route incoming MQTT messages to the appropriate handler."""
     if msg.topic == MOTION_TOPIC:
         handle_motion(msg.payload)
 
 
 def start_mqtt() -> mqtt.Client:
+    """Connect to the MQTT broker with TLS and credentials, then start the network loop."""
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     if MQTT_USERNAME:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
@@ -250,6 +267,7 @@ def poll_loop(client: mqtt.Client) -> None:
 
 
 def main() -> None:
+    """Validate config, start subsystems, and enter the camera poll loop."""
     if not MQTT_BROKER:
         log.error("MQTT_BROKER not set; configure .env first")
         return
